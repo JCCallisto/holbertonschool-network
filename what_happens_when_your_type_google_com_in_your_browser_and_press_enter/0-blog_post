@@ -1,0 +1,163 @@
+# What Happens When You Type https://www.google.com in Your Browser and Press Enter?
+
+Have you ever wondered what happens in those few milliseconds between pressing Enter and seeing Google's homepage? This seemingly simple action triggers a complex chain of events involving many systems and protocols. Let me provide a deep dive into this question through the modern web stack.
+
+## The Journey Begins: DNS Resolution
+
+When you type `https://www.google.com` and press Enter, your browser first needs to find out where Google actually resides on the internet. Browsers don't understand domain names like "google.com" – they need IP addresses.
+
+This is where the **Domain Name System (DNS)** comes in. Think of DNS as the internet's phonebook. Your browser initiates a DNS request that typically follows this path:
+
+1. **Browser Cache**: First, your browser checks if it recently visited this site and cached the IP address
+2. **Operating System Cache**: If not found, it checks your OS-level DNS cache
+3. **Router Cache**: Your router may also cache DNS records
+4. **ISP's DNS Resolver**: Your Internet Service Provider maintains DNS servers that handle most requests
+5. **Recursive DNS Lookup**: If the ISP doesn't have it cached, it queries root DNS servers, then TLD (Top-Level Domain) servers for `.com`, and finally Google's authoritative nameservers
+
+This hierarchical system returns an IP address like `142.250.185.46`. Now your browser knows where to send its request.
+
+## Establishing Connection: TCP/IP
+
+With the IP address in hand, your browser needs to establish a connection to Google's server. This happens using the **TCP/IP protocol suite**, which is the fundamental communication language of the internet.
+
+**TCP (Transmission Control Protocol)** ensures reliable data transmission through a three-way handshake:
+
+1. **SYN**: Your computer sends a synchronization packet to Google's server
+2. **SYN-ACK**: Google's server acknowledges and sends its own synchronization packet back
+3. **ACK**: Your computer acknowledges the server's response
+
+This handshake establishes a reliable connection channel. **IP (Internet Protocol)** handles the actual routing of packets across networks, ensuring data travels from your computer through various routers and networks to reach its destination and in this case it would be Google's servers.
+
+## Security Checkpoint: Firewall
+
+Before your request reaches Google's infrastructure, it passes through multiple **firewalls** – both on your end and Google's end.
+
+**Your firewall** (built into your OS or router) checks outbound connections to ensure no malicious software (Like Viruses or Trojans) is trying to communicate with your command-and-control servers.
+
+**Google's enterprise firewall** is far more sophisticated and layered. It:
+- Filters incoming traffic based on IP addresses, ports, and protocols
+- Blocks known malicious sources
+- Implements rate limiting to prevent DDoS attacks
+- Inspects packet contents for suspicious patterns
+- Maintains allow/deny lists for traffic management
+
+Only legitimate requests make it through this security gauntlet.
+
+## Securing the Channel: HTTPS/SSL
+
+Notice the `https://` in the URL? That 'S' stands for Secure, and it's very important. Before any data is exchanged, your browser and Google's server establish an encrypted connection using **TLS/SSL (Transport Layer Security/Secure Sockets Layer)**.
+
+Here's how the TLS handshake works:
+
+1. **ClientHello**: Your browser sends supported encryption methods
+2. **ServerHello**: Google's server chooses an encryption method and sends its SSL certificate
+3. **Certificate Verification**: Your browser verifies the certificate against trusted Certificate Authorities (CAs)
+4. **Key Exchange**: Both parties exchange cryptographic keys using methods like Diffie-Hellman
+5. **Encrypted Communication**: All subsequent data is encrypted using the agreed-upon cipher suite
+
+This ensures that even if someone intercepts your traffic, they can't read it. You're now communicating through a encrypted tunnel that secures the saftey of data being exchanged.
+
+## Traffic Distribution: Load Balancer
+
+Google receives billions of requests daily. A single server couldn't handle this load. This is where **load balancers** come in.
+
+Google's load balancing infrastructure is multi-layered:
+
+**DNS-based Load Balancing**: The DNS response itself may return different IP addresses based on your geographic location, directing you to the nearest data center.
+
+**Hardware Load Balancers**: Once your request reaches a data center, hardware load balancers distribute traffic using algorithms such as:
+- **Round Robin**: Cycles through available servers
+- **Least Connections**: Routes to the server with fewest active connections
+- **Weighted Distribution**: Routes based on server capacity
+- **Geographic/Latency-based**: Considers physical proximity
+
+These load balancers also perform health checks, automatically removing unhealthy servers from rotation and ensuring high availability.
+
+## Serving Content: Web Server
+
+Your request now reaches a **web server** – typically something like Nginx or Google's own custom web server (GWS - Google Web Server).
+
+The web server's responsibilities include:
+
+- **Connection Management**: Handling the TCP connection
+- **Request Parsing**: Understanding what you're asking for
+- **Static Content**: Serving static resources (CSS, JavaScript, images) directly
+- **Routing**: Determining if this request needs dynamic processing
+- **SSL Termination**: Decrypting the HTTPS traffic
+- **Compression**: Using gzip or brotli to compress responses
+- **Caching**: Serving cached content when possible
+
+For a simple static page, the web server might respond directly. But for dynamic content (like search results), it passes the request to an application server.
+
+## Dynamic Processing: Application Server
+
+The **application server** is where the business logic resides. For Google's homepage, this might involve:
+
+- **User Authentication**: Checking if you're logged in via cookies
+- **Personalization**: Retrieving your preferences and settings
+- **A/B Testing**: Determining which version of the page to show you
+- **Ad Selection**: Choosing which ads to display (if any)
+- **Request Processing**: Executing the actual application code (likely written in C++, Java, Python, or Go)
+
+The application server runs the complex code that makes Google intelligent and personalized. It orchestrates multiple operations, often calling various microservices that handle specific functionalities.
+
+## Data Retrieval: Database
+
+For any personalized content, the application server needs to query **databases**. Google uses Many database systems:
+
+**SQL Databases**: For structured, transactional data like user accounts
+- Examples: Google's Spanner (globally distributed SQL database)
+
+**NoSQL Databases**: For flexible, high-scale data storage
+- Examples: Bigtable for massive datasets
+
+**Caching Layers**: Like Memcached or Redis to serve frequently accessed data without hitting the main database
+
+**Distributed File Systems**: Like Google File System (GFS) for storing massive amounts of data
+
+For your Google homepage request, the database query might fetch:
+- Your profile information
+- Recently searched queries
+- Personalization preferences
+- Account settings
+
+The database returns this data to the application server, which formats it into HTML.
+
+## The Response Journey
+
+Now the response travels back through the same layers:
+
+1. **Application Server**: Generates HTML/CSS/JavaScript
+2. **Web Server**: Adds headers, compresses content
+3. **Load Balancer**: Routes response back through the same connection
+4. **Firewall**: Validates outbound traffic
+5. **Internet**: Packets travel back through the internet infrastructure
+6. **Your Computer**: Receives encrypted packets
+7. **Browser**: Decrypts, parses HTML, constructs DOM, fetches additional resources (CSS, JS, images), executes JavaScript, and renders the page
+
+## Additional Complexity: Modern Web Reality
+
+This explanation simplifies what's actually happening when in reality:
+
+- **CDNs (Content Delivery Networks)**: Static resources are served from edge servers near you
+- **HTTP/2 or HTTP/3**: Modern protocols multiplex multiple requests over a single connection
+- **Service Workers**: May intercept requests for offline functionality
+- **DNS Prefetching**: Browsers resolve DNS for likely next destinations
+- **TCP Fast Open**: Reduces handshake overhead
+- **QUIC Protocol**: Google's own protocol that reduces latency
+
+## Conclusion
+
+What feels like an instant is actually an orchestrated symphony of systems working together. From DNS resolution to database queries, each component plays a crucial role in delivering that simple white page with a search box.
+
+Understanding this flow is essential for:
+- **Debugging**: Knowing where problems might occur
+- **Optimization**: Identifying bottlenecks in the stack
+- **Architecture**: Designing scalable systems
+- **Security**: Understanding attack vectors and defenses
+
+The next time you type a URL and press Enter, you'll know the incredible journey that happens in milliseconds. The modern web is a testament to decades of engineering innovation, built on robust protocols and distributed systems that work seamlessly together.
+
+---
+
+Note: This post covers the fundamental architecture of web requests. Each component mentioned here could be its own in-depth article. The beauty of this system is that it's designed to be reliable, fast, and secure – and it all happens faster than you can blink.
